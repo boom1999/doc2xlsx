@@ -4,6 +4,20 @@ import pandas as pd
 import os
 
 
+def file_rename(file_path):
+    """
+
+    :param file_path: path of the docx root  file
+    :return: rename docx files followed certain rules, null return
+    """
+    path = file_path
+    files = os.listdir(path)
+    for i, file in enumerate(files):
+        OldName = os.path.join(path, file)
+        NewName = os.path.join(path, "test_file_"+str(i)+"_.docx")
+        os.rename(OldName, NewName)
+
+
 def read_docx(read):
     """
 
@@ -81,13 +95,19 @@ if __name__ == '__main__':
     files_path = '../docx/'
     docx_files = os.listdir(files_path)
     num_docx = len(docx_files)
-    input_path = "../docx/test_file_"
     map_tables_path = "../map/map.xlsx"
     list_sum = []
 
-    for i in range(1, num_docx+1):
-        tables = read_docx(input_path+str(i)+"_.docx")
-        list_sum.extend(tables)
-        print("Extend docx "+str(i)+" successfully!\n")
+    if os.path.exists(files_path):
+        file_rename(files_path)
+        files = os.listdir(files_path)
+        for i, file in enumerate(files):
+            tables = read_docx(files_path+file)
+            list_sum.extend(tables)
+            print("Extend docx "+str(i+1)+" successfully!\n")
+    else:
+        print('Path not exist')
+
     final_list = add_type_region(list_sum, map_tables_path)
     export2excel(final_list, output_path)
+    print("Change successfully!")
