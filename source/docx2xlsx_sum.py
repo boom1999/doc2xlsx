@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# @Time : 2022/2/24 9:28
+# @Author : lingz
+# @Software: PyCharm
+import copy
+
 from docx import Document
 import xlrd
 import pandas as pd
@@ -31,13 +37,14 @@ def read_docx(read):
     for table in table_s:
         for j in range(1, len(table.rows)):
             dict_ = {'序号': table.cell(j, 0).text,
-                     '展品名称': table.cell(j, 1).text,
-                     '所属领域': table.cell(j, 2).text,
-                     '展品形式': table.cell(j, 3).text,
-                     '展品单位': table.cell(j, 4).text,
-                     '联系人': table.cell(j, 5).text,
-                     '联系电话': table.cell(j, 6).text}
-            if dict_['展品名称'] != '':
+                     '编码': table.cell(j, 1).text,
+                     '展品名称': table.cell(j, 2).text,
+                     '所属领域': table.cell(j, 3).text,
+                     '展品形式': table.cell(j, 4).text,
+                     '展品单位': table.cell(j, 5).text,
+                     '联系人': table.cell(j, 6).text,
+                     '联系电话': table.cell(j, 7).text}
+            if dict_['编码'] != '':
                 list_.append(dict_)
                 print("Append successfully: row " + str(j))
     return list_
@@ -50,22 +57,25 @@ def add_type_region(list_in, map_tables_path):
     :param list_in: putin original list which need to add type and region
     :return: final list -- containing type and region
     """
-    list_out = list_in
+
+    # Use copy.deepcopy to avoid to change list_in outsider
+    list_out = copy.deepcopy(list_in)
     code_ = '编码'
     flat_ = '展品单位'
+    flat_simple = '单位简称'
     type_ = '类型'
     origin_ = '地区'
-    map_data = pd.read_excel(map_tables_path, index_col='展品单位', sheet_name='Sheet 1')
-    flat_list = list(map_data.index)
+    # Attention! 'map_tables_path' can't have head index, pd.read_excel can't read.
+    map_data = pd.read_excel(map_tables_path, index_col='编码', sheet_name='Sheet 1')
+    code_list = list(map_data.index)
     for j in range(0, len(list_out)):
-        if list_out[j][flat_] not in flat_list:
-            list_out[j][type_] = '需手动添加'
-            list_out[j][code_] = '需手动添加'
-            list_out[j][origin_] = '需手动添加'
+        if list_out[j][code_] not in code_list:
+            print(list_out[j][flat_]+"的一项展品编码出错，请手动修改!")
             continue
-        list_out[j][type_] = map_data.loc[list_out[j][flat_], type_]
-        list_out[j][code_] = map_data.loc[list_out[j][flat_], code_]
-        list_out[j][origin_] = map_data.loc[list_out[j][flat_], origin_]
+        list_out[j][flat_] = map_data.loc[list_out[j][code_], flat_]
+        list_out[j][flat_simple] = map_data.loc[list_out[j][code_], flat_simple]
+        list_out[j][type_] = map_data.loc[list_out[j][code_], type_]
+        list_out[j][origin_] = map_data.loc[list_out[j][code_], origin_]
     return list_out
 
 
@@ -79,7 +89,7 @@ def export2excel(export, out):
     pf = pd.DataFrame(list(export))
 
     # Redefine column labels
-    order = ['序号', '编码', '展品名称', '所属领域', '展品形式', '展品单位', '类型', '地区', '联系人', '联系电话']
+    order = ['序号', '编码', '展品名称', '所属领域', '展品形式', '展品单位', '单位简称', '类型', '地区', '联系人', '联系电话']
     pf = pf[order]
 
     file_path = pd.ExcelWriter(out)
@@ -107,7 +117,6 @@ if __name__ == '__main__':
             print("Extend docx "+str(i+1)+" successfully!\n")
     else:
         print('Path not exist')
-
     final_list = add_type_region(list_sum, map_tables_path)
     export2excel(final_list, output_path)
     print("Change successfully!")
