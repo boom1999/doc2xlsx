@@ -1,0 +1,6 @@
+{
+  "input": {"path": "../docx/"},
+  "output": {"path": "../xlsx/summary.xlsx"},
+  "map": {"path": "../map/map_0301.xlsx"},
+  "classify": {"path": "../classify"}
+}
