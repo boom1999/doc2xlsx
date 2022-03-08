@@ -22,8 +22,7 @@ if __name__ == '__main__':
     func.mkdir_classify(classify_path)
     if os.path.exists(input_path):
         dirs_path, docx_files_path = func.get_docx_files_path(input_path)
-        for dir_path in dirs_path:
-            data, code_ = func.classify(output_path, dir_path)
+        func.classify(output_path, dirs_path, classify_path)
     else:
         print('Path not exist')
 

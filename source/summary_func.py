@@ -9,6 +9,8 @@ import xlrd
 import pandas as pd
 from pandas import DataFrame
 import os
+import re
+import shutil
 
 
 def get_docx_files_path(input_path):
@@ -113,28 +115,11 @@ def export2excel(export, out):
     file_path.save()
 
 
-def classify(summary_path, dir_path):
-    """
-
-    :param summary_path:
-    :param dir_path:
-    :return:
-    """
-    path = copy.deepcopy(summary_path)
-    (filepath, filename) = os.path.split(dir_path)
-    code_list = filename.split('-')[0:3]
-    now_code = code_list[0] + '-' + code_list[1] + '-' + code_list[2]
-    data = pd.read_excel(path, index_col='编码')
-    excel_code_list = list(data.index)
-    data.loc[now_code].to_excel("../xlsx/"+now_code+".xlsx")
-    return data, now_code
-
-
 def mkdir_classify(classify_path):
     """
 
-    :param classify_path:
-    :return:
+    :param classify_path: The path need to be created.
+    :return: The classify_path.
     """
     classify_path = classify_path.strip()
     classify_path = classify_path.rstrip("\\")
@@ -143,6 +128,55 @@ def mkdir_classify(classify_path):
     if not isExists:
         os.makedirs(classify_path)
         print("分类路径"+str(classify_path)+"创建成功")
-        return True
+        return classify_path
     else:
-        print("分类路径已存在")
+        print("分类路径"+str(classify_path)+"已存在")
+        return classify_path
+
+
+def classify(summary_path, dirs_path, classify_path):
+    """
+
+    :param summary_path: The original statistical table path.
+    :param dirs_path: The file summary path.
+    :param classify_path: The output path.
+    :return:
+    """
+    path = copy.deepcopy(summary_path)
+    data = pd.read_excel(path, index_col='所属领域')
+    summary_type_list = list(set(data.index))
+    for summary_type in summary_type_list:
+        type_path = mkdir_classify(os.path.join(classify_path+'/', str(summary_type)))
+        # 注意：这里data.loc[[summary_type], :])第一个参数必须要加[]，否则会解析成series.Series，需要使用frame.DataFrame保存
+        target_path = str(type_path) + '/'
+        temp_target_path = copy.deepcopy(target_path)
+        data.loc[[summary_type], :].to_excel(target_path + summary_type + '汇总表.xlsx')
+        print(summary_type + '汇总表.xlsx 创建成功')
+        print("--------------------------------------------------------------------")
+        print("Moving file structure......")
+        temp_data = data.loc[[summary_type], :]
+        for i in range(0, temp_data.shape[0]):
+            code_ = temp_data.iloc[i, 0]
+            num_ = temp_data.iloc[i, 1]
+            name_ = temp_data.iloc[i, 4]
+            for dir_path in dirs_path:
+                f_path, f_name = os.path.split(dir_path)
+                if re.match(code_ + '.+', f_name) is not None:
+                    temp_dirs_path = os.listdir(dir_path)
+                    for temp_dir_path in temp_dirs_path:
+                        # 用正则从路径中拆出数字, like: 10、源牌电磁水表（实物） to ['10', '']
+                        path_list = re.split("[^0-9]+", temp_dir_path)
+                        for path in path_list:
+                            if path == str(num_) and os.path.splitext(temp_dir_path)[1] != ".docx":
+                                src_path = os.path.join(dir_path+'/', temp_dir_path)
+                                target_path = os.path.join(target_path, '('+str(name_)+')'+temp_dir_path)
+                                if not os.path.exists(target_path):
+                                    shutil.copytree(src_path, target_path)
+                                    target_path = copy.deepcopy(temp_target_path)
+                                    print(str(src_path) + '-->' + str(target_path) + "移动成功!")
+                                else:
+                                    target_path = copy.deepcopy(temp_target_path)
+                                    print("----------------目标路径%s已存在，请检查！------------------" % target_path)
+                                break
+                    break
+        print("--------------------------------------------------------------------")
