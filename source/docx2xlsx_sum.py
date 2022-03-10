@@ -31,4 +31,5 @@ if __name__ == '__main__':
         print('Path not exist')
     final_list = func.add_type_region(list_sum, map_tables_path)
     func.export2excel(final_list, output_path)
+    func.cell_handling(output_path)
     print("Change successfully!")

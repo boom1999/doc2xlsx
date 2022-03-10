@@ -11,6 +11,8 @@ from pandas import DataFrame
 import os
 import re
 import shutil
+from openpyxl import load_workbook
+import difflib
 
 
 def get_docx_files_path(input_path):
@@ -28,7 +30,7 @@ def get_docx_files_path(input_path):
         for file in files:
             if os.path.splitext(file)[1] == ".docx":
                 docx_files.append(file)
-        docx_files_path.append(os.path.join(dirs_path[index]+'/', docx_files[index]))
+        docx_files_path.append(os.path.join(dirs_path[index] + '/', docx_files[index]))
     return dirs_path, docx_files_path
 
 
@@ -127,10 +129,10 @@ def mkdir_classify(classify_path):
     isExists = os.path.exists(classify_path)
     if not isExists:
         os.makedirs(classify_path)
-        print("分类路径"+str(classify_path)+"创建成功")
+        print("分类路径'" + str(classify_path) + "'创建成功！")
         return classify_path
     else:
-        print("分类路径"+str(classify_path)+"已存在")
+        print("分类路径'" + str(classify_path) + "'已存在，跳过创建！")
         return classify_path
 
 
@@ -146,7 +148,7 @@ def classify(summary_path, dirs_path, classify_path):
     data = pd.read_excel(path, index_col='所属领域')
     summary_type_list = list(set(data.index))
     for summary_type in summary_type_list:
-        type_path = mkdir_classify(os.path.join(classify_path+'/', str(summary_type)))
+        type_path = mkdir_classify(os.path.join(classify_path + '/', str(summary_type)))
         # 注意：这里data.loc[[summary_type], :])第一个参数必须要加[]，否则会解析成series.Series，需要使用frame.DataFrame保存
         target_path = str(type_path) + '/'
         temp_target_path = copy.deepcopy(target_path)
@@ -167,16 +169,84 @@ def classify(summary_path, dirs_path, classify_path):
                         # 用正则从路径中拆出数字, like: 10、源牌电磁水表（实物） to ['10', '']
                         path_list = re.split("[^0-9]+", temp_dir_path)
                         for path in path_list:
-                            if path == str(num_) and os.path.splitext(temp_dir_path)[1] != ".docx":
-                                src_path = os.path.join(dir_path+'/', temp_dir_path)
-                                target_path = os.path.join(target_path, '('+str(name_)+')'+temp_dir_path)
+                            if path == str(num_) and os.path.splitext(temp_dir_path)[1] != ".docx" \
+                                    and os.path.splitext(temp_dir_path)[1] != ".pdf":
+                                src_path = os.path.join(dir_path + '/', temp_dir_path)
+                                target_path = os.path.join(target_path, '(' + str(name_) + ')' + temp_dir_path)
                                 if not os.path.exists(target_path):
                                     shutil.copytree(src_path, target_path)
                                     target_path = copy.deepcopy(temp_target_path)
                                     print(str(src_path) + '-->' + str(target_path) + "移动成功!")
                                 else:
                                     target_path = copy.deepcopy(temp_target_path)
-                                    print("----------------目标路径%s已存在，请检查！------------------" % target_path)
+                                    print("----------------目标路径%s已存在，跳过！------------------" % target_path)
                                 break
                     break
         print("--------------------------------------------------------------------")
+
+
+def cell_handling(summary_path):
+    """
+    Line breaks and '\' existing in cells in the original table will affect path creation and need to be replaced.
+    :param summary_path: file path to process.
+    :return:
+    """
+    wb = load_workbook(summary_path)
+    ws = wb.active
+    for i in range(1, ws.max_row + 1):
+        for j in range(1, ws.max_column + 1):
+            old = ws.cell(i, j).value
+            if old is not None:
+                ws.cell(i, j).value = old.strip().replace(' ', '').replace("\n", "").replace("/", "和")
+    wb.save(summary_path)
+    wb.close()
+    print("换行符和反斜杠处理完成!")
+
+
+def string_similar(s1, s2):
+    return difflib.SequenceMatcher(None, s1, s2).quick_ratio()
+
+
+def classify_2(src_path, dst_path):
+    """
+
+    :param src_path:
+    :param dst_path:
+    :return:
+    """
+    temp_dirs_path = os.listdir(src_path)
+    temp_src_path = copy.deepcopy(src_path)
+    temp_dst_path = copy.deepcopy(dst_path)
+
+    for temp_dir_path in temp_dirs_path:
+        temp_src_path = os.path.join(temp_src_path + '/', temp_dir_path)
+        temp_dst_path = os.path.join(temp_dst_path + '/', temp_dir_path)
+        if not os.path.exists(temp_dst_path):
+            if os.path.splitext(temp_src_path)[1] != ".xlsx":
+                shutil.copytree(temp_src_path, temp_dst_path)
+            else:
+                shutil.copyfile(temp_src_path, temp_dst_path)
+            print(str(temp_src_path) + '-->' + str(temp_dst_path) + "移动成功!")
+            temp_src_path = copy.deepcopy(src_path)
+            temp_dst_path = copy.deepcopy(dst_path)
+        else:
+            print("----------------目标路径%s已存在，跳过！------------------" % temp_dst_path)
+            temp_src_path = copy.deepcopy(src_path)
+            temp_dst_path = copy.deepcopy(dst_path)
+
+
+def input_index():
+    """
+
+    :return: type_list: [num1, num2, ...]
+    """
+    input_data = input()
+    input_data = input_data.strip()
+    input_list = input_data.split(" ")
+    input_list = list(map(int, input_list))
+    for data in input_list:
+        if data < 1 or data > 7:
+            print("越界，请重新输入！")
+            input_list = input_index()
+    return input_list
+

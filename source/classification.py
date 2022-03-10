@@ -14,8 +14,6 @@ if __name__ == '__main__':
         input_path = json_data["input"]["path"]
         # 输出excel表格目录
         output_path = json_data["output"]["path"]
-        # 匹配文件map目录
-        map_tables_path = json_data["map"]["path"]
         # 分类目录
         classify_path = json_data["classify"]["path"]
 
@@ -25,4 +23,4 @@ if __name__ == '__main__':
         func.classify(output_path, dirs_path, classify_path)
     else:
         print('Path not exist')
-
+    print("一次分类结束。")
