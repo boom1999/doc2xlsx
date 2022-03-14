@@ -170,7 +170,7 @@ def classify(summary_path, dirs_path, classify_path):
                         path_list = re.split("[^0-9]+", temp_dir_path)
                         for path in path_list:
                             if path == str(num_) and os.path.splitext(temp_dir_path)[1] != ".docx" \
-                                    and os.path.splitext(temp_dir_path)[1] != ".pdf":
+                                    and os.path.splitext(temp_dir_path)[1] != ".PDF":
                                 src_path = os.path.join(dir_path + '/', temp_dir_path)
                                 target_path = os.path.join(target_path, '(' + str(name_) + ')' + temp_dir_path)
                                 if not os.path.exists(target_path):
@@ -250,3 +250,56 @@ def input_index():
             input_list = input_index()
     return input_list
 
+
+def merge_type_xlsx(static_path):
+    """
+    Merge sub-domain summary tables.
+    :return:
+    """
+    static_type_path_list = os.listdir(static_path)
+    for index in range(0, len(static_type_path_list)):
+        file_name = static_type_path_list[index]
+        static_type_path_list[index] = os.path.join(static_path + '/', static_type_path_list[index])
+        DFs = []
+        dirs_list = os.listdir(static_type_path_list[index])
+        out_summary_path = os.path.join(static_type_path_list[index] + '/', file_name + '.xlsx')
+        if os.path.exists(out_summary_path):
+            os.remove(out_summary_path)
+        for dir_path in dirs_list:
+            if os.path.splitext(dir_path)[1] == ".xlsx":
+                file_path = os.path.join(static_type_path_list[index] + '/', dir_path)
+                df = pd.read_excel(file_path)
+                DFs.append(df)
+                os.remove(file_path)
+        writer = pd.ExcelWriter(out_summary_path)
+        pd.concat(DFs).to_excel(writer, index=False)
+        writer.save()
+        print(file_name+"合并完毕")
+
+
+def merge_summary_xlsx(output_path, deleting=True):
+    """
+
+    :param output_path: Original xlsx output path.
+    :param deleting: Whether to delete the original xlsx.
+    :return:
+    """
+    xlsx_name_list = os.listdir(output_path)
+    xlsx_path_list = []
+    DFs = []
+    out_summary_path = os.path.join(output_path + '/', 'summary.xlsx')
+    for index in range(0, len(xlsx_name_list)):
+        xlsx_path_list.append(os.path.join(output_path + '/', xlsx_name_list[index]))
+    for xlsx_path in xlsx_path_list:
+        if os.path.splitext(xlsx_path)[1] == ".xlsx":
+            if xlsx_path == out_summary_path:
+                os.remove(out_summary_path)
+                continue
+            df = pd.read_excel(xlsx_path)
+            DFs.append(df)
+            if deleting:
+                os.remove(xlsx_path)
+    writer = pd.ExcelWriter(out_summary_path)
+    pd.concat(DFs).to_excel(writer, index=False)
+    writer.save()
+    print("合并完毕！\n")

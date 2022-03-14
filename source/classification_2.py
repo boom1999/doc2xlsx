@@ -43,8 +43,10 @@ if __name__ == '__main__':
             if auto == 0:
                 print("当前处理的基础类别为：", dirs_list[index])
                 print("请输入您认为的归属类型号, 多个类型以空格隔开, 1.互联网+, 2.生命健康, 3.新材料, 4.碳达峰碳中和, 5.海洋强省, 6.科技强农， 7.其他")
+                # TODO 如果要用已有字典自动匹配六大领域，在这里替换手动输入的列表
                 temp_num_list = func.input_index()
                 for temp_num in temp_num_list:
                     func.classify_2(dirs_path[index], static_type_path_list[temp_num - 1])
+        func.merge_type_xlsx(classify_2_path)
     else:
         print('Path not exist')

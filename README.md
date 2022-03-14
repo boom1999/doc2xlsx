@@ -14,6 +14,11 @@
 │       └── 分类型展品文件夹
 │          └── 附件
 │       └── type汇总表.docx
+├── classify_2
+│   └── Type
+│       └── 分类型展品文件夹（六种固定类型）
+│          └── 附件
+│       └── type汇总表.docx
 ├── docx
 │   └── GX-SB-XXXX-NumName
 │       └── GX-SB-XXXX-NumName展品汇总表.docx
@@ -25,7 +30,6 @@
 │   └── classification.py
 │   └── classification_2.py
 │   └── docx2xlsx_sum.py
-│   └── merge_xlsx.py
 │   └── path.json
 │   └── summary_func.py
 └── xlsx

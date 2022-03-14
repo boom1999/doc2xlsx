@@ -1,7 +1,7 @@
 {
-  "input": {"path": "../docx/"},
-  "output": {"path": "../xlsx/summary.xlsx"},
-  "map": {"path": "../map/map_0301.xlsx"},
+  "input": {"path": "../docx"},
+  "output": {"path": "../xlsx"},
+  "map": {"path": "../map/map_0311.xlsx"},
   "classify": {"path": "../classify"},
   "classify_2": {"path": "../classify_2"}
 }
