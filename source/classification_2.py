@@ -2,20 +2,25 @@
 # @Time : 2022/3/10 10:29
 # @Author : lingz
 # @Software: PyCharm
-import copy
+
 import os
 import json
 import summary_func as func
+import time
 
 
 if __name__ == '__main__':
+    time_start = time.time()
     with open('./path.json', 'r', encoding='utf-8') as fp:
         json_data = json.load(fp)
         # 已分类目录
         classify_path = json_data["classify"]["path"]
         # 重新分类目录
         classify_2_path = json_data["classify_2"]["path"]
+        # 分类对应表
+        classify_map_path = json_data["classify_map"]["path"]
 
+    # 1.互联网+, 2.生命健康, 3.新材料, 4.碳达峰碳中和, 5.海洋强省, 6.科技强农， 7.其他
     static_type_name_list = ['互联网+', '生命健康', '新材料', '碳达峰碳中和', '海洋强省', '科技强农']
     static_type_path_list = []
     dirs_path = []
@@ -42,11 +47,14 @@ if __name__ == '__main__':
                     break
             if auto == 0:
                 print("当前处理的基础类别为：", dirs_list[index])
-                print("请输入您认为的归属类型号, 多个类型以空格隔开, 1.互联网+, 2.生命健康, 3.新材料, 4.碳达峰碳中和, 5.海洋强省, 6.科技强农， 7.其他")
-                # TODO 如果要用已有字典自动匹配六大领域，在这里替换手动输入的列表
-                temp_num_list = func.input_index()
+                temp_num_list = func.get_classify_2_list(classify_map_path, str(dirs_list[index]))
                 for temp_num in temp_num_list:
                     func.classify_2(dirs_path[index], static_type_path_list[temp_num - 1])
         func.merge_type_xlsx(classify_2_path)
     else:
         print('Path not exist')
+    func.reorder_type(classify_2_path)
+
+    time_end = time.time()
+    time_sum = time_end - time_start
+    print("二次分类结束，共花费时间：" + str(time_sum) + 's')

@@ -3,5 +3,6 @@
   "output": {"path": "../xlsx"},
   "map": {"path": "../map/map_0311.xlsx"},
   "classify": {"path": "../classify"},
-  "classify_2": {"path": "../classify_2"}
+  "classify_2": {"path": "../classify_2"},
+  "classify_map": {"path": "../map/classify_2_map.xlsx"}
 }

@@ -136,11 +136,11 @@ def mkdir_classify(classify_path):
         return classify_path
 
 
-def classify(summary_path, dirs_path, classify_path):
+def classify(summary_path, input_path, classify_path):
     """
 
-    :param summary_path: The original statistical table path.
-    :param dirs_path: The file summary path.
+    :param summary_path: The path of the summary.xlsx.
+    :param input_path: The input word files path.
     :param classify_path: The output path.
     :return:
     """
@@ -149,9 +149,9 @@ def classify(summary_path, dirs_path, classify_path):
     summary_type_list = list(set(data.index))
     for summary_type in summary_type_list:
         type_path = mkdir_classify(os.path.join(classify_path + '/', str(summary_type)))
-        # 注意：这里data.loc[[summary_type], :])第一个参数必须要加[]，否则会解析成series.Series，需要使用frame.DataFrame保存
         target_path = str(type_path) + '/'
         temp_target_path = copy.deepcopy(target_path)
+        # Tip：这里data.loc[[summary_type], :])第一个参数必须要加[]，否则会解析成series.Series，需要使用frame.DataFrame保存
         data.loc[[summary_type], :].to_excel(target_path + summary_type + '汇总表.xlsx')
         print(summary_type + '汇总表.xlsx 创建成功')
         print("--------------------------------------------------------------------")
@@ -160,28 +160,46 @@ def classify(summary_path, dirs_path, classify_path):
         for i in range(0, temp_data.shape[0]):
             code_ = temp_data.iloc[i, 0]
             num_ = temp_data.iloc[i, 1]
+            exhibit_name_ = temp_data.iloc[i, 2]
             name_ = temp_data.iloc[i, 4]
-            for dir_path in dirs_path:
-                f_path, f_name = os.path.split(dir_path)
-                if re.match(code_ + '.+', f_name) is not None:
-                    temp_dirs_path = os.listdir(dir_path)
-                    for temp_dir_path in temp_dirs_path:
-                        # 用正则从路径中拆出数字, like: 10、源牌电磁水表（实物） to ['10', '']
-                        path_list = re.split("[^0-9]+", temp_dir_path)
-                        for path in path_list:
-                            if path == str(num_) and os.path.splitext(temp_dir_path)[1] != ".docx" \
-                                    and os.path.splitext(temp_dir_path)[1] != ".PDF":
-                                src_path = os.path.join(dir_path + '/', temp_dir_path)
-                                target_path = os.path.join(target_path, '(' + str(name_) + ')' + temp_dir_path)
-                                if not os.path.exists(target_path):
-                                    shutil.copytree(src_path, target_path)
-                                    target_path = copy.deepcopy(temp_target_path)
-                                    print(str(src_path) + '-->' + str(target_path) + "移动成功!")
+            short_code = code_.split('-')[0]
+            move_name_list = os.listdir(input_path)
+            for move_name in move_name_list:
+                if str(short_code) == move_name:
+                    move_path = os.path.join(input_path + '/', move_name)
+                    unit_name_list = os.listdir(move_path)
+                    for unit_name in unit_name_list:
+                        temp_list = unit_name.split('-')[0:3]
+                        temp_unit = temp_list[0] + '-' + temp_list[1] + '-' + temp_list[2]
+                        if code_ == temp_unit:
+                            unit_path = os.path.join(move_path + '/', unit_name)
+                            achieve_name_list = os.listdir(unit_path)
+                            for achieve_name in achieve_name_list:
+                                # 用正则从路径中拆出数字, like: 10、源牌电磁水表（实物） to ['10', '']
+                                path_list = re.split("[^0-9]+", achieve_name)
+                                temp_num = path_list[0]
+                                if temp_num == str(num_) and os.path.splitext(achieve_name)[1] != ".docx" \
+                                        and os.path.splitext(achieve_name)[1] != ".pdf":
+                                    src_path = os.path.join(unit_path + '/', achieve_name)
+                                    target_path = os.path.join(target_path,
+                                                               str(i + 1) + '.(' + str(name_) + ')成果' + str(
+                                                                   num_) + '、' + str(exhibit_name_))
+                                    if not os.path.exists(target_path):
+                                        shutil.copytree(src_path, target_path)
+                                        print(str(src_path) + '-->' + str(target_path) + "移动成功!")
+                                        target_path = copy.deepcopy(temp_target_path)
+                                    else:
+                                        print("----------------目标路径%s已存在，跳过！------------------" % target_path)
+                                        target_path = copy.deepcopy(temp_target_path)
+                                    break
                                 else:
-                                    target_path = copy.deepcopy(temp_target_path)
-                                    print("----------------目标路径%s已存在，跳过！------------------" % target_path)
-                                break
+                                    continue
+                            break
+                        else:
+                            continue
                     break
+                else:
+                    continue
         print("--------------------------------------------------------------------")
 
 
@@ -235,19 +253,14 @@ def classify_2(src_path, dst_path):
             temp_dst_path = copy.deepcopy(dst_path)
 
 
-def input_index():
+def input_index(input_data):
     """
 
     :return: type_list: [num1, num2, ...]
     """
-    input_data = input()
     input_data = input_data.strip()
-    input_list = input_data.split(" ")
+    input_list = input_data.split("、")
     input_list = list(map(int, input_list))
-    for data in input_list:
-        if data < 1 or data > 7:
-            print("越界，请重新输入！")
-            input_list = input_index()
     return input_list
 
 
@@ -274,7 +287,7 @@ def merge_type_xlsx(static_path):
         writer = pd.ExcelWriter(out_summary_path)
         pd.concat(DFs).to_excel(writer, index=False)
         writer.save()
-        print(file_name+"合并完毕")
+        print(file_name + "合并完毕")
 
 
 def merge_summary_xlsx(output_path, deleting=True):
@@ -303,3 +316,53 @@ def merge_summary_xlsx(output_path, deleting=True):
     pd.concat(DFs).to_excel(writer, index=False)
     writer.save()
     print("合并完毕！\n")
+
+
+def get_classify_2_list(classify_map_path, type_name):
+    """
+
+    :param classify_map_path:
+    :param type_name:
+    :return:
+    """
+    temp_num_list = []
+    path = copy.deepcopy(classify_map_path)
+    data = pd.read_excel(path, index_col='原领域')
+    original_type_list = list(set(data.index))
+    for original_type in original_type_list:
+        if str(type_name) == str(original_type):
+            temp_num = data.loc[original_type, '领域编号']
+            temp_num_list = input_index(str(temp_num))
+            print(temp_num)
+            break
+    return temp_num_list
+
+
+def reorder_type(classify_2_path):
+    """
+
+    :param classify_2_path:
+    :return:
+    """
+
+    type_name_list = os.listdir(classify_2_path)
+    for type_name in type_name_list:
+        type_path = os.path.join(classify_2_path + '/', type_name)
+        xlsx_name = str(type_name + '.xlsx')
+        xlsx_path = os.path.join(type_path + '/', xlsx_name)
+        data = pd.read_excel(xlsx_path, index_col='编码')
+        re_num = 0
+        for index in range(0, len(data)):
+            num_ = data.iloc[index, 1]
+            exhibit_name_ = data.iloc[index, 2]
+            name_ = data.iloc[index, 4]
+            search_name = str('.(' + str(name_) + ')成果' + str(num_) + '、' + str(exhibit_name_))
+            unit_name_list = os.listdir(type_path)
+            re_num += 1
+            for unit_name in unit_name_list:
+                temp_name = os.path.splitext(unit_name)[1]
+                if temp_name != '.xlsx' and temp_name == search_name:
+                    os.rename(os.path.join(type_path+'/', unit_name), os.path.join(type_path+'/', str(re_num)+search_name))
+                    break
+                else:
+                    continue
